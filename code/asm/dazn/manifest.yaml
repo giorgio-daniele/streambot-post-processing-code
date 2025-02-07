@@ -1,0 +1,225 @@
+# Video profiles
+video_288kbps:
+    bitrate:    288
+    width:      480
+    height:     270
+    framerate:  25
+    mime_type:  "video/mp4"
+
+stream_video_9_0:
+    bitrate:    288
+    width:      480
+    height:     270
+    framerate:  25
+    mime_type:  "video/mp4"
+
+video_480kbps:
+    bitrate:    480
+    width:      640
+    height:     360
+    framerate:  25
+    mime_type:  "video/mp4"
+
+stream_video_8_0:
+    bitrate:    480
+    width:      640
+    height:     360
+    framerate:  25
+    mime_type:  "video/mp4"
+
+video_840kbps:
+    bitrate:    840
+    width:      640
+    height:     960
+    framerate:  25
+    mime_type:  "video/mp4"
+
+stream_video_7_0:
+    bitrate:    840
+    width:      640
+    height:     960
+    framerate:  25
+    mime_type:  "video/mp4"
+
+video_1500kbps:
+    bitrate:    1500
+    width:      960
+    height:     540
+    framerate:  25
+    mime_type:  "video/mp4"
+
+stream_video_6_0:
+    bitrate:    1500
+    width:      960
+    height:     540
+    framerate:  25
+    mime_type:  "video/mp4"
+
+video_2300kbps:
+    bitrate:    2300
+    width:      1280
+    height:     720
+    framerate:  25
+    mime_type:  "video/mp4"
+
+stream_video_5_0:
+    bitrate:    2300
+    width:      1280
+    height:     720
+    framerate:  25
+    mime_type:  "video/mp4"
+
+video_3000kbps:
+    bitrate:    3000
+    width:      1280
+    height:     720
+    framerate:  25
+    mime_type:  "video/mp4"
+
+stream_video_4_0:
+    bitrate:    3000
+    width:      1280
+    height:     720
+    framerate:  25
+    mime_type:  "video/mp4"
+
+video_4400kbps:
+    bitrate:    4400
+    width:      1280
+    height:     720
+    framerate:  50
+    mime_type:  "video/mp4"
+
+stream_video_3_0:
+    bitrate:    4400
+    width:      1280
+    height:     720
+    framerate:  50
+    mime_type:  "video/mp4"
+
+video_6500kbps:
+    bitrate:    6500
+    width:      1280
+    height:     720
+    framerate:  50
+    mime_type:  "video/mp4"
+
+stream_video_2_0:
+    bitrate:    6500
+    width:      1280
+    height:     720
+    framerate:  50
+    mime_type:  "video/mp4"
+
+video_8000kbps:
+    bitrate:    8000
+    width:      1920
+    height:     1080
+    framerate:  50
+    mime_type:  "video/mp4"
+
+stream_video_1_0:
+    bitrate:    8000
+    width:      1920
+    height:     1080
+    framerate:  50
+    mime_type:  "video/mp4"
+
+v0_121:
+    bitrate:    6500
+    width:      1280
+    height:     720
+    framerate:  50
+    mime_type:  "video/mp4"
+
+v1_121:
+    bitrate:    8000
+    width:      1920
+    height:     1080
+    framerate:  50
+    mime_type:  "video/mp4"
+
+v2_121:
+    bitrate:    4400
+    width:      1280
+    height:     720
+    framerate:  50
+    mime_type:  "video/mp4"
+
+v3_121:
+    bitrate:    3000
+    width:      1280
+    height:     720
+    framerate:  25
+    mime_type:  "video/mp4"
+
+v4_121:
+    bitrate:    2300
+    width:      1280
+    height:     720
+    framerate:  25
+    mime_type:  "video/mp4"
+
+v5_121:
+    bitrate:    1500
+    width:      960
+    height:     540
+    framerate:  25
+    mime_type:  "video/mp4"
+
+v6_121:
+    bitrate:    480
+    width:      640
+    height:     360
+    framerate:  25
+    mime_type:  "video/mp4"
+
+v7_121:
+    bitrate:    840
+    width:      960
+    height:     540
+    framerate:  25
+    mime_type:  "video/mp4"
+
+v8_121:
+    bitrate:    840
+    width:      480
+    height:     270
+    framerate:  25
+    mime_type:  "video/mp4"
+
+v9_121:
+    bitrate:    288
+    width:      480
+    height:     270
+    framerate:  25
+    mime_type:  "video/mp4"
+
+# Audio Profiles
+audio_64kbps:
+    bitrate:    64
+    mime_type:  "audio/mp4"
+
+audio_128kbps:
+    bitrate:    128
+    mime_type:  "audio/mp4"
+
+v7_221:
+    bitrate:    128
+    mime_type:  "audio/mp4"
+
+v7_222:
+    bitrate:    128
+    mime_type:  "audio/mp4"
+
+stream_audio_10:
+    bitrate:    64
+    mime_type:  "audio/mp4"
+
+stream_audio_11:
+    bitrate:    128
+    mime_type:  "audio/mp4"
+
+stream_audio_12:
+    bitrate:    128
+    mime_type:  "audio/mp4"

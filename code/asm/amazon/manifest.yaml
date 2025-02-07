@@ -1,0 +1,39 @@
+cenc-sd_video_1_0:
+    bitrate:    200
+    width:      512
+    height:     288
+    framerate:  25
+    mime_type:  "video/mp4"
+
+cenc-sd_video_2_0:
+    bitrate:    450
+    width:      704
+    height:     396
+    framerate:  25
+    mime_type:  "video/mp4"
+
+cenc-sd_video_3_0:
+    bitrate:    800
+    width:      704
+    height:     396
+    framerate:  25
+    mime_type:  "video/mp4"
+
+cenc-sd_video_4_0:
+    bitrate:    1200
+    width:      960
+    height:     540
+    framerate:  25
+    mime_type:  "video/mp4"
+
+cenc-sd_video_5_0:
+    bitrate:    1800
+    width:      960
+    height:     540
+    framerate:  25
+    mime_type:  "video/mp4"
+
+# Audio Profiles
+cenc-sd_audio_6_0:
+    bitrate:    128
+    mime_type:  "audio/mp4"
