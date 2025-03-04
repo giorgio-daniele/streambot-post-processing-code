@@ -46,7 +46,7 @@ def main():
     names_udp = Counter()
     video_cnt = Counter()
 
-    meta = f"code/profiler/{server}"
+    meta = f"code/pro/{server}"
 
     # Load existing statistics if available
     try:

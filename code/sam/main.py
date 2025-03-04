@@ -1,24 +1,12 @@
-import os
-import re
-import sys
-import json
-import shutil
-import argparse
-import pandas as pd
-
 from lib import *
 
-import numpy
-import pandas as pd
-from   typing import Optional
-
-def sample_bins(bins:    pd.DataFrame, 
-                http:    pd.DataFrame, 
-                play:    Optional[pd.DataFrame], 
+def sample_bins(bins:    pandas.DataFrame, 
+                http:    pandas.DataFrame, 
+                play:    Optional[pandas.DataFrame], 
                 proto:   Protocol, 
                 ts:      float, 
                 te:      float,
-                winsize: float) -> pd.DataFrame: 
+                winsize: float) -> pandas.DataFrame: 
     
     # Define the list of records
     windows = []
@@ -30,65 +18,77 @@ def sample_bins(bins:    pd.DataFrame,
     elif proto == Protocol.UDP:
         features = UDP_FEATURES
 
+    n_features = len(features["temporal"]) + len(features["volumetric"])
+
     for ti in range(int(ts), int(te - winsize), int(winsize)):
         tj = ti + winsize
         
-        # Filter bins in [ti; tj]
-        data = bins[(bins["ts"] <= tj) & (bins["te"] >= ti)]
+        # Filter all bins falling in the current window
+        data = bins[(bins["ts"] <= tj) & (bins["te"] >= ti)].copy()
         
         if data.empty:
-            windows.append([ti, tj] + [0] * (len(features)))
+            windows.append([ti, tj] + [0] * (n_features + 1))
             continue
         
-        # Filter HTTP in [ti; tj]
+        # Filter all HTTP falling in the current window
         meta = http[(http["ts"] <= tj) & (http["te"] >= ti)]
         
-        # Filter states in [ti; tj]
-        status = None
-        if play is not None and not play.empty:
-            status = play[(play["ti"] <= tj) & (play["ti"] >= ti)]
+        # # Filter states in [ti; tj]
+        # status = None
+        # if play is not None and not play.empty:
+        #     status = play[(play["ti"] <= tj) & (play["ti"] >= ti)]
         
-        data = data.copy()
-        data["rel_ts"] = numpy.maximum(data["ts"], ti)
-        data["rel_te"] = numpy.minimum(data["te"], tj)
-        data["factor"] = (data["rel_te"] - data["rel_ts"]) / (data["te"] - data["ts"]).replace(0, 1)
+        # Compute the real active time for each bin
+        bins["rel_ts"] = bins[ts].apply(lambda x: max(x, ti))
+        bins["rel_te"] = bins[te].apply(lambda x: min(x, tj))
         
-        intervals = data[["rel_ts", "rel_te"]].values.tolist()
-        idle      = winsize - sum(end - start for start, end in merge_intervals(intervals))
-        avg_span  = (data["rel_te"] - data["rel_ts"]).mean()
-        max_span  = (data["rel_te"] - data["rel_ts"]).max()
-        min_span  = (data["rel_te"] - data["rel_ts"]).min()
-        std_span  = (data["rel_te"] - data["rel_ts"]).std()
+        # Compute the relative size
+        bins["rel_sz"] = bins["rel_te"] - bins["rel_ts"]
 
-        values = {}
+        # Define the overlapping ratio of each frame
+        bins["factor"] = bins["rel_sz"] / bins["duration"]
+
+        # Ensure no NaN values in 'factor' column, filling with 1
+        bins["factor"] = bins["factor"].fillna(1)
+
+        # Handle bins intervals
+        intervals        = [[float(start), float(end)] for start, end in bins[["rel_ts", "rel_te"]].values.tolist()]
+        merged_intervals = merge_intervals(intervals)
         
-        # Get Layer-4 metrics
-        if proto == Protocol.UDP:
-            for col in ["c_bytes_all", "c_pkts_all",  # Client
-                        "s_bytes_all", "s_pkts_all"]: # Server
-                values[col] = float((data[col] * data["factor"]).sum())
+        # Derive temporal metrics
+        win_idle  = float(winsize - sum(end - start for start, end in merged_intervals))
+        max_span  = float(max(bins["rel_sz"].max(), 0))
+        min_span  = float(max(bins["rel_sz"].min(), 0))
+        std_span  = float(bins["rel_sz"].std()) if len(bins["rel_sz"].dropna()) > 1 else 0.0
+        avg_span  = float(bins["rel_sz"].mean())
+
+        volumetric = {}
         
-        if proto == Protocol.TCP:
-            for col in ["c_bytes_all", "c_ack_cnt", "c_ack_cnt_p", "c_pkts_all", "c_pkts_data",  # Client
-                        "s_bytes_all", "s_ack_cnt", "s_ack_cnt_p", "s_pkts_all", "s_pkts_data"]: # Server
-                values[col] = float((data[col] * data["factor"]).sum())
+        # Derive volumetric metrics
+        for col in features["volumetric"]:
+            volumetric[col] = float((data[col] * data["factor"]).sum())
         
-        # Get Layer-7 metrics
+        # Derive ground-truth
         video_rate, _ = process_media(meta, "video/mp4", ts)
         
-        # Define the record
-        record = [ti, tj, idle, avg_span, std_span, max_span, min_span] + list(values.values()) + [video_rate]
+        # Add the new window
+        windows.append([ti, tj, 
+                        # Temporal  metrics
+                        win_idle, avg_span, std_span, max_span, min_span] + 
+                        # Volumetric metrics
+                        [volumetric[feature] for feature in features["volumetric"]] + [video_rate])
         
-        if status is not None and not status.empty:
-            record.append(len(status[status["status"] == "live"]))
-            record.append(len(status[status["status"] == "dead"]))
-        windows.append(record)
+        # if status is not None and not status.empty:
+        #     record.append(len(status[status["status"] == "live"]))
+        #     record.append(len(status[status["status"] == "dead"]))
     
-    column_names = ["ts", "te"] + features
-    if play is not None:
-        column_names += ["nlive", "ndead"]
+    column_names = ["ts", "te"] + features + ["videorate"]
+
+    # if play is not None:
+    #     column_names += ["nlive", "ndead"]
     
-    samples = pd.DataFrame(windows, columns=column_names)
+    # Generate the frame
+    samples = pandas.DataFrame(windows, columns=column_names)
 
     # Rescale the time limits
     if not samples.empty:
@@ -102,7 +102,7 @@ def args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input",    required=True)
     parser.add_argument("--samples",  required=True)
-    parser.add_argument("--provider", required=True, choices=["dazn"])
+    parser.add_argument("--provider", required=True, choices=["dazn", "amazon"])
     parser.add_argument("--window",   required=True)
     return parser.parse_args()
 
@@ -116,6 +116,7 @@ def main():
     shutil.rmtree(os.path.join(samples_path, "tcp", winsize), ignore_errors=True)
     shutil.rmtree(os.path.join(samples_path, "udp", winsize), ignore_errors=True)
     # Generate new one
+
     os.makedirs(os.path.join(samples_path, "tcp", winsize), exist_ok=True)
     os.makedirs(os.path.join(samples_path, "udp", winsize), exist_ok=True)
     
@@ -123,8 +124,7 @@ def main():
     names = re.compile(STREAMING_SERVERS[provider])
         
     # Lambda function for sorting the events
-    events_path = sorted([file for file in os.listdir(input_path)], 
-                         key=lambda name: int(name.rsplit('-', 1)[-1].split('.')[0]))   
+    events_path = sorted([file for file in os.listdir(input_path)], key=lambda name: int(name.rsplit('-', 1)[-1].split('.')[0]))   
     
     # Define counters
     tcp_based_cnt = 1
@@ -134,28 +134,26 @@ def main():
         with open(os.path.join(input_path, event_path), 'r') as f:
             event = json.load(f)
             
-            # Filter UDP flows according to live streaming regex
+            # Select all TCP flows associated with the content provider with regular expression
             event["tcp"] = [item for item in event["tcp"] if names.search(item.get("cname", ""))]
-            # Filter UDP flows according to live streaming regex
+            # Select all UDP flows associated with the content provider with regular expression
             event["udp"] = [item for item in event["udp"] if names.search(item.get("cname", ""))]
 
-            # Filter TCP bins associated to live streaming flows
+            # Select all TCP flow bins matching the 4-tuple
             tcp_bins = []
             for flow in event["tcp"]:
-                tcp_bins.extend([bin for bin in flow["bins"] if all(bin[key] == flow[key] 
-                                    for key in ["s_ip", "s_port", "c_ip", "c_port"])])
+                tcp_bins.extend([bin for bin in flow["bins"] if all(bin[key] == flow[key] for key in ["s_ip", "s_port", "c_ip", "c_port"])])
             
-            # Filter UDP bins associated to live streaming flows 
+            # Select all UDP flow bins matching the 4-tuple
             udp_bins = []
             for flow in event["udp"]:
-                udp_bins.extend([bin for bin in flow["bins"] if all(bin[key] == flow[key] 
-                                    for key in ["s_ip", "s_port", "c_ip", "c_port"])])
+                udp_bins.extend([bin for bin in flow["bins"] if all(bin[key] == flow[key] for key in ["s_ip", "s_port", "c_ip", "c_port"])])
 
-            # Get any HTTP transaction
-            http = pd.DataFrame(event["http"])
+            # Select any HTTP
+            http = pandas.DataFrame(event["http"])
             
-            # Get any player status
-            play = pd.DataFrame(event["status"]) if "status" in event else None
+            # Select any status
+            # play = pandas.DataFrame(event["status"]) if "status" in event else None
 
             # Determine protocol and data
             total_bins = len(tcp_bins) + len(udp_bins)
@@ -164,21 +162,17 @@ def main():
             
             proto, data = None, None
             if len(tcp_bins) / total_bins >= 0.9:
-                proto, data = Protocol.TCP, pd.DataFrame(tcp_bins)
+                proto, data = Protocol.TCP, pandas.DataFrame(tcp_bins)
             elif len(udp_bins) / total_bins >= 0.9:
-                proto, data = Protocol.UDP, pd.DataFrame(udp_bins)
+                proto, data = Protocol.UDP, pandas.DataFrame(udp_bins)
 
             if not proto:
                 continue
 
-            # Generate and save samples
+            # Run the sampling/feature extraction procedure
             out = sample_bins(bins=data, 
                               http=http, 
-                              play=play,
-                              proto=proto, 
-                              winsize=float(winsize), 
-                              ts=float(event["ts"]), 
-                              te=float(event["te"]))
+                              play=None, proto=proto, winsize=float(winsize), ts=float(event["ts"]), te=float(event["te"]))
             
             print(f"{event_path} sampled with winsize={winsize}")
             

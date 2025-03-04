@@ -1,26 +1,7 @@
-# main.py
-import os
-import re
-import sys
-import yaml
-import json
-import urllib
-import shutil
-import argparse
-import ipaddress
-import urllib.parse
-import pandas as pd
+from lib import *
 
-from itertools import zip_longest
-from lib       import *
 
-def load_yaml_file(path: str):
-    with open(path, "r") as file:
-        content = yaml.safe_load(file)
-        return content
-    return {}
-
-def process_har(file: str, provider: str, start: float) -> pd.DataFrame:
+def process_har(file: str, provider: str, start: float) -> pandas.DataFrame:
     
     records = []
     
@@ -44,10 +25,10 @@ def process_har(file: str, provider: str, start: float) -> pd.DataFrame:
             # Get the instant when the client issues the request and
             # compute the overall time the response requires to be 
             # received from the user
-            ts: pd.DatetimeIndex = pd.to_datetime(entry["startedDateTime"])
-            ts: pd.Timestamp = ts.timestamp() * 1000
+            ts: pandas.DatetimeIndex = pandas.to_datetime(entry["startedDateTime"])
+            ts: pandas.Timestamp = ts.timestamp() * 1000
             ts = ts - (float(start))
-            te: pd.Timestamp = ts + tot
+            te: pandas.Timestamp = ts + tot
             
             # Parse the URL
             data = urllib.parse.urlparse(url)
@@ -71,7 +52,7 @@ def process_har(file: str, provider: str, start: float) -> pd.DataFrame:
             record = [ts, te, server, content, mime, video_rate, audio_rate]
             records.append(record)
             
-    return pd.DataFrame(records, columns=["ts", "te", "server", "content", "mime", "videorate", "audiorate"])
+    return pandas.DataFrame(records, columns=["ts", "te", "server", "content", "mime", "videorate", "audiorate"])
 
 def args():
     ## Define arguments parser
@@ -81,15 +62,6 @@ def args():
     parser.add_argument("--tests",    required=True)
     parser.add_argument("--events",   required=True)
     return parser.parse_args()
-
-
-# def print_progress(current, total):
-#     bar_length = 30 
-#     progress = current / total
-#     bar = '=' * int(bar_length * progress) + ' ' * (bar_length - int(bar_length * progress))
-#     percentage = progress * 100
-#     sys.stdout.write(f"\r[{bar}] {percentage:.2f}%")
-#     sys.stdout.flush()
 
 def main():
     input_path  = args().input
@@ -115,19 +87,26 @@ def main():
     # Remove any previous output
     shutil.rmtree(tests_path,  ignore_errors=True)
     shutil.rmtree(events_path, ignore_errors=True)
+
     # Genearate new output
     os.makedirs(tests_path,  exist_ok=True)
     os.makedirs(events_path, exist_ok=True)
     
-    print("-" * 69)
+    print("=" * 20)
     print(f"Processing input folder={input_path}")
-    print("-" * 69)
+    print("=" * 20)
     
     ###########################################################################
     #       Convert data into tests folders with data serialization           #
     ###########################################################################
 
     for num, (cap, bot, har, reb) in enumerate(zip(cap_files, bot_files, har_files, reb_files), start=1):
+
+        print("Processing cap", cap)
+        print("Processing bot", bot)
+        print("Processing har", har)
+        print("Processing reb", reb)
+        print(";;;")
         
         # Define the out folder
         out = os.path.join(tests_path, f"test-{num}")
@@ -160,16 +139,16 @@ def main():
     n_tests = len(tests)
     n_event = 1
     
-    print("-" * 69)
+    print("=" * 20)
     print(f"Converting tests into streaming event object...")
-    print("-" * 69)
+    print("=" * 20)
     
     for i, test_path in enumerate(tests, start=1):
-        bcom = pd.read_csv(os.path.join(tests_path, test_path, LOG_BOT_COMPLETE), sep=" ")
-        tcom = pd.read_csv(os.path.join(tests_path, test_path, LOG_TCP_COMPLETE), sep=" ")
-        tper = pd.read_csv(os.path.join(tests_path, test_path, LOG_TCP_PERIODIC), sep=" ")
-        ucom = pd.read_csv(os.path.join(tests_path, test_path, LOG_UDP_COMPLETE), sep=" ")
-        uper = pd.read_csv(os.path.join(tests_path, test_path, LOG_UDP_PERIODIC), sep=" ")
+        bcom = pandas.read_csv(os.path.join(tests_path, test_path, LOG_BOT_COMPLETE), sep=" ")
+        tcom = pandas.read_csv(os.path.join(tests_path, test_path, LOG_TCP_COMPLETE), sep=" ")
+        tper = pandas.read_csv(os.path.join(tests_path, test_path, LOG_TCP_PERIODIC), sep=" ")
+        ucom = pandas.read_csv(os.path.join(tests_path, test_path, LOG_UDP_COMPLETE), sep=" ")
+        uper = pandas.read_csv(os.path.join(tests_path, test_path, LOG_UDP_PERIODIC), sep=" ")
         
         # Process Tstat logs
         for frame in [tcom, tper, ucom, uper]:
@@ -199,15 +178,13 @@ def main():
         uper["te"] = uper["time_abs_start"] - bcom.iloc[0]["abs"] + uper["bin_duration"]
         
         # Process Puppeter logs
-        hcom = process_har(file=os.path.join(tests_path, test_path, LOG_HAR_COMPLETE), 
-                           provider=provider, 
-                           start=bcom.iloc[0]["abs"])
+        hcom = process_har(file=os.path.join(tests_path, test_path, LOG_HAR_COMPLETE), provider=provider, start=bcom.iloc[0]["abs"])
         
         # Process Buffering logs
         rcom = None
         path = os.path.join(tests_path, test_path, LOG_REB_COMPLETE)
         if os.path.exists(path):
-            rcom       = pd.read_csv(path, sep=" ", names=["ti", "status"])
+            rcom       = pandas.read_csv(path, sep=" ", names=["ti", "status"])
             rcom["ti"] = rcom["ti"] - bcom.iloc[0]["abs"]
         
         # Save processed documents
@@ -218,9 +195,9 @@ def main():
         hcom.to_csv(os.path.join(tests_path, test_path, LOG_HAR_COMPLETE), sep=" ", index=False)
         
         # Rebuffering trace
-        path = os.path.join(tests_path, test_path, LOG_REB_COMPLETE)
-        if os.path.exists(path):
-            rcom.to_csv(os.path.join(tests_path, test_path, LOG_HAR_COMPLETE), sep=" ", index=False)
+        # path = os.path.join(tests_path, test_path, LOG_REB_COMPLETE)
+        # if os.path.exists(path):
+        #     rcom.to_csv(os.path.join(tests_path, test_path, LOG_HAR_COMPLETE), sep=" ", index=False)
     
         # Get all events
         periods = get_events(frame=bcom)
@@ -238,9 +215,9 @@ def main():
             }
             
             # Edit the event data structure (if rebuffering is provided)
-            if reb is not None:
-                data["status"] = rcom[(rcom["ti"] <= te) & 
-                                      (rcom["ti"] >= ts)].to_dict(orient="records")
+            # if reb is not None:
+            #     data["status"] = rcom[(rcom["ti"] <= te) & 
+            #                           (rcom["ti"] >= ts)].to_dict(orient="records")
         
             for flow in data["tcp"]:
                 flow["bins"] = tper[

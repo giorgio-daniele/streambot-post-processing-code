@@ -1,9 +1,17 @@
 # Define file extensions
+import re
 import os
 import enum
 import pathlib
-import pandas as pd
+import pandas
+import yaml
+import json
+import argparse
+import ipaddress
+import shutil
+import urllib.parse
 
+from itertools import zip_longest
 
 CAP = ".pcap"
 BOT = ".csv"
@@ -35,7 +43,6 @@ HTTP_SERVER_HOSTNAME     = "http_hostname"
 FULLY_QUALIFIED_NAME_TCP = "fqdn"
 FULLY_QUALIFIED_NAME_UDP = "fqdn"
 
-
 # Define current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -48,8 +55,14 @@ MANIFESTS = {
 class Protocol(enum.Enum):
     TCP = 1
     UDP = 2
+
+def load_yaml_file(path: str):
+    with open(path, "r") as file:
+        content = yaml.safe_load(file)
+        return content
+    return {}
     
-def get_events(frame: pd.DataFrame):
+def get_events(frame: pandas.DataFrame):
     ## Define a function for extracting all streaming events
     frame = frame[~frame["event"].str.contains("sniffer|browser|origin|net|app", case=False, na=False)]
     return [(frame.iloc[i, frame.columns.get_loc("rel")], frame.iloc[i + 1, frame.columns.get_loc("rel")]) 
@@ -66,7 +79,7 @@ def fetch_tests(folder: str) -> list[str]:
     return sorted([test for test in os.listdir(folder)], key=order) 
 
 
-def cname(record: pd.Series, protocol: Protocol) -> str:
+def cname(record: pandas.Series, protocol: Protocol) -> str:
     result = "-"
     
     https = 8192
@@ -81,7 +94,7 @@ def cname(record: pd.Series, protocol: Protocol) -> str:
         #     result = record.get(HTTP_SERVER_HOSTNAME, "-")
         if result == "-":
             value  = str(record.get(FULLY_QUALIFIED_NAME_TCP, "-"))
-            result = value if pd.notna(value) else "-"
+            result = value if pandas.notna(value) else "-"
 
     if protocol == Protocol.UDP:
         layer_7 = record.get(LAYER_7_PROTOCOL_UDP, 0)
@@ -89,6 +102,6 @@ def cname(record: pd.Series, protocol: Protocol) -> str:
         #     result = record.get(SNI_CLIENT_HELLO_UDP, "-")
         if result == "-":
             value  = str(record.get(FULLY_QUALIFIED_NAME_UDP, "-"))
-            result = value if pd.notna(value) else "-"
+            result = value if pandas.notna(value) else "-"
             
     return result

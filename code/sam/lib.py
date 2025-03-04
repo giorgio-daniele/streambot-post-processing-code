@@ -1,7 +1,15 @@
 # Define file extensions
 import os
 import enum
-import pandas as pd
+import re
+import sys
+import json
+import shutil
+import argparse
+
+import numpy
+import pandas
+from   typing import Optional
 
 # Define filenames
 LOG_TCP_COMPLETE   = "log_tcp_complete"
@@ -59,17 +67,22 @@ def process_media(request_data: pd.DataFrame, mime_type: str, ts: float):
     
     return mean, seqs
     
-UDP_FEATURES = [
-    "idle", "avg_span", "std_span", "max_span", "min_span",
-    "c_bytes_all", "c_pkts_all",  # Client
-    "s_bytes_all", "s_pkts_all",  # Server
-    "video_rate"                  # Truth
-]
+# UDP_FEATURES = [
+#     "idle", "avg_span", "std_span", "max_span", "min_span",
+#     "c_bytes_all", "c_pkts_all",  # Client
+#     "s_bytes_all", "s_pkts_all",  # Server
+#     "video_rate"                  # Truth
+# ]
+
+UDP_FEATURES = {
+    "temporal":   ["idle", "avg_span", "std_span", "max_span", "min_span"],
+    "volumetric": ["c_bytes_all", "c_pkts_all", "s_bytes_all", "s_pkts_all"]
+}
 
 
-TCP_FEATURES = [
-    "idle", "avg_span", "std_span", "max_span", "min_span",
-    "c_bytes_all", "c_ack_cnt", "c_ack_cnt_p", "c_pkts_all", "c_pkts_data",  # Client
-    "s_bytes_all", "s_ack_cnt", "s_ack_cnt_p", "s_pkts_all", "s_pkts_data",  # Server
-    "video_rate"                                                             # Truth
-]
+TCP_FEATURES = {
+    "temporal":   ["idle", "avg_span", "std_span", "max_span", "min_span"],
+    "volumetric": ["c_bytes_all", "c_ack_cnt", "c_ack_cnt_p", "c_pkts_all", "c_pkts_data",
+                   "s_bytes_all", "s_ack_cnt", "s_ack_cnt_p", "s_pkts_all", "s_pkts_data"]
+                   
+}
