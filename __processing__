@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Python
+pyth=".venv/bin/python"
+
+# Assemble dataset1
+proc="/home/giorgiodaniele/Desktop/masterdegree-thesis/code/asm/main.py"
+root="/home/giorgiodaniele/Desktop/dazn/dataset1"
+$pyth $proc --input="$root/data" --provider="dazn" --tests="$root/tests" --events="$root/events"
+
+#Assemble dataset2
+root="/home/giorgiodaniele/Desktop/dazn/dataset2"
+for rate in 1500 3000 4500 6000 7500 50000; do
+    rate=${rate}kbits
+    proc="/home/giorgiodaniele/Desktop/masterdegree-thesis/code/asm/main.py"
+    $pyth $proc --input="$root/$rate/data" --provider="dazn" --tests="$root/$rate/tests" --events="$root/$rate/events"
+done
+
+# # Profile dataset1
+# proc="/home/giorgiodaniele/Desktop/masterdegree-thesis/code/pro/main.py"
+# root="/home/giorgiodaniele/Desktop/dazn/dataset1"
+# $pyth $proc --input="$root/events" --provider="dazn"
+
+# Sample dataset2
+root="/home/giorgiodaniele/Desktop/dazn/dataset2"
+for rate in 1500 3000 4500 6000 7500 50000; do
+    rate=${rate}kbits
+    proc="/home/giorgiodaniele/Desktop/masterdegree-thesis/code/sam/main.py"
+    $pyth $proc --input="$root/$rate/events" --provider="dazn" --samples="$root/$rate/samples" --window=10000
+done
+
+# Copy DAZN tests from dataset1
+src="/home/giorgiodaniele/Desktop/dazn/dataset1"
+dst="/home/giorgiodaniele/Desktop/thesis-blog/dazn/dataset1"
+mkdir -p  $dst
+cp    -r "$src/tests" "$dst"
+
+# Copy DAZN sests and samples from dataset2
+src="/home/giorgiodaniele/Desktop/dazn/dataset2"
+for rate in 1500 3000 4500 6000 7500 50000; do
+    rate=${rate}kbits
+    dst="/home/giorgiodaniele/Desktop/thesis-blog/dazn/dataset2/$rate"
+    mkdir -p  $dst
+    cp    -r "$src/$rate/samples" "$dst"
+    cp    -r "$src/$rate/tests"   "$dst"
+done

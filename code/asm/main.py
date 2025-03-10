@@ -52,7 +52,7 @@ def process_har(file: str, provider: str, start: float) -> pandas.DataFrame:
             record = [ts, te, server, content, mime, video_rate, audio_rate]
             records.append(record)
             
-    return pandas.DataFrame(records, columns=["ts", "te", "server", "content", "mime", "videorate", "audiorate"])
+    return pandas.DataFrame(records, columns=["ts", "te", "server", "content", "mime", "video_rate", "audio_rate"])
 
 def args():
     ## Define arguments parser
@@ -105,7 +105,7 @@ def main():
         print("Processing cap", cap)
         print("Processing bot", bot)
         print("Processing har", har)
-        print("Processing reb", reb)
+        #print("Processing reb", reb)
         print(";;;")
         
         # Define the out folder
@@ -126,9 +126,9 @@ def main():
         os.system(f"cp {har} {os.path.join(out, name)}")
         
         # Copy Rebuffering trace in out
-        if reb is not None:
-            name = os.path.basename(reb).rsplit('-', 1)[0]
-            os.system(f"cp {reb} {os.path.join(out, name)}")
+        # if reb is not None:
+        #     name = os.path.basename(reb).rsplit('-', 1)[0]
+        #     os.system(f"cp {reb} {os.path.join(out, name)}")
             
     ###########################################################################
     #       Convert tests into events object with data serialization          #
@@ -153,7 +153,7 @@ def main():
         # Process Tstat logs
         for frame in [tcom, tper, ucom, uper]:
             frame.columns = [re.sub(r'[#:0-9]', '', col) for col in frame.columns]
-            frame.drop(frame[frame["s_ip"].apply(lambda ip: ipaddress.ip_address(ip).is_private)].index, inplace=True)
+            frame.drop(frame[frame["s_ip"].apply(lambda ip: ipaddress.ip_address(ip).is_private)].index,   inplace=True)
             frame.drop(frame[frame["s_ip"].apply(lambda ip: ipaddress.ip_address(ip).is_multicast)].index, inplace=True)
 
         tcom["id"] = tcom[["s_ip", "s_port", "c_ip", "c_port"]].astype(str).agg("-".join, axis=1)

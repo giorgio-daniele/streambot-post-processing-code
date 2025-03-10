@@ -33,17 +33,25 @@ class Protocol(enum.Enum):
     TCP = 1
     UDP = 2
     
-def merge_intervals(intervals: list[list[float]]) -> list[list[float]]:
+def merge_intervals(intervals, ti, tj):
+    # Sort intervals by the start time
     intervals.sort(key=lambda x: x[0])
-    result = []
+    
+    merged = []
     for interval in intervals:
-        if not result or interval[0] > result[-1][1]:
-            result.append(interval)
+        if not merged or merged[-1][1] < interval[0]:
+            merged.append(interval)
         else:
-            result[-1][1] = max(result[-1][1], interval[1])
-    return result
+            # Merge overlapping intervals
+            merged[-1] = (merged[-1][0], max(merged[-1][1], interval[1]))
+    
+    # Calculate total covered length
+    covered = sum(e - s for s, e in merged)
+    
+    # Calculate uncovered units
+    return tj - ti - covered
 
-def process_media(request_data: pd.DataFrame, mime_type: str, ts: float):
+def process_media(request_data: pandas.DataFrame, mime_type: str, ts: float):
     # Filter the data based on mime type (case-insensitive)
     filtered_data = request_data[request_data["mime"].str.contains(mime_type, case=False, na=False)]
     
@@ -59,7 +67,7 @@ def process_media(request_data: pd.DataFrame, mime_type: str, ts: float):
 
     # Process the media data if available
     if mime_type == "video/mp4":
-        videorates = filtered_data["videorate"].dropna().astype(float)
+        videorates = filtered_data["video_rate"].dropna().astype(float)
         mean       = videorates.mean()
         sequence   = [str(rate) for rate in videorates]
         seqs       = "$".join(sequence) if sequence else "null"
@@ -67,13 +75,6 @@ def process_media(request_data: pd.DataFrame, mime_type: str, ts: float):
     
     return mean, seqs
     
-# UDP_FEATURES = [
-#     "idle", "avg_span", "std_span", "max_span", "min_span",
-#     "c_bytes_all", "c_pkts_all",  # Client
-#     "s_bytes_all", "s_pkts_all",  # Server
-#     "video_rate"                  # Truth
-# ]
-
 UDP_FEATURES = {
     "temporal":   ["idle", "avg_span", "std_span", "max_span", "min_span"],
     "volumetric": ["c_bytes_all", "c_pkts_all", "s_bytes_all", "s_pkts_all"]

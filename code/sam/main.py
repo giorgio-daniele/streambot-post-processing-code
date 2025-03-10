@@ -39,28 +39,19 @@ def sample_bins(bins:    pandas.DataFrame,
         #     status = play[(play["ti"] <= tj) & (play["ti"] >= ti)]
         
         # Compute the real active time for each bin
-        bins["rel_ts"] = bins[ts].apply(lambda x: max(x, ti))
-        bins["rel_te"] = bins[te].apply(lambda x: min(x, tj))
-        
-        # Compute the relative size
-        bins["rel_sz"] = bins["rel_te"] - bins["rel_ts"]
-
-        # Define the overlapping ratio of each frame
-        bins["factor"] = bins["rel_sz"] / bins["duration"]
-
-        # Ensure no NaN values in 'factor' column, filling with 1
-        bins["factor"] = bins["factor"].fillna(1)
-
-        # Handle bins intervals
-        intervals        = [[float(start), float(end)] for start, end in bins[["rel_ts", "rel_te"]].values.tolist()]
-        merged_intervals = merge_intervals(intervals)
+        data["rel_ts"] = numpy.maximum(data["ts"], ti)
+        data["rel_te"] = numpy.minimum(data["te"], tj)
+        data["abs_sz"] = data["te"] - data["ts"]
+        data["rel_sz"] = data["rel_te"] - data["rel_ts"]
+        data["factor"] = data["rel_sz"] / data["abs_sz"].replace(0, 1)
         
         # Derive temporal metrics
-        win_idle  = float(winsize - sum(end - start for start, end in merged_intervals))
-        max_span  = float(max(bins["rel_sz"].max(), 0))
-        min_span  = float(max(bins["rel_sz"].min(), 0))
-        std_span  = float(bins["rel_sz"].std()) if len(bins["rel_sz"].dropna()) > 1 else 0.0
-        avg_span  = float(bins["rel_sz"].mean())
+        intervals = data[["rel_ts", "rel_te"]].values.tolist()
+        win_idle  = merge_intervals(intervals=intervals, ti=ti, tj=tj)
+        avg_span  = data["rel_sz"].mean()
+        max_span  = data["rel_sz"].max()
+        min_span  = data["rel_sz"].min()
+        std_span  = data["rel_sz"].std()
 
         volumetric = {}
         
@@ -82,7 +73,7 @@ def sample_bins(bins:    pandas.DataFrame,
         #     record.append(len(status[status["status"] == "live"]))
         #     record.append(len(status[status["status"] == "dead"]))
     
-    column_names = ["ts", "te"] + features + ["videorate"]
+    column_names = ["ts", "te"] + features["temporal"] + features["volumetric"] + ["videorate"]
 
     # if play is not None:
     #     column_names += ["nlive", "ndead"]
@@ -142,12 +133,14 @@ def main():
             # Select all TCP flow bins matching the 4-tuple
             tcp_bins = []
             for flow in event["tcp"]:
-                tcp_bins.extend([bin for bin in flow["bins"] if all(bin[key] == flow[key] for key in ["s_ip", "s_port", "c_ip", "c_port"])])
+                tcp_bins.extend([bin for bin in flow["bins"] 
+                                 if all(bin[key] == flow[key] for key in ["s_ip", "s_port", "c_ip", "c_port"])])
             
             # Select all UDP flow bins matching the 4-tuple
             udp_bins = []
             for flow in event["udp"]:
-                udp_bins.extend([bin for bin in flow["bins"] if all(bin[key] == flow[key] for key in ["s_ip", "s_port", "c_ip", "c_port"])])
+                udp_bins.extend([bin for bin in flow["bins"] 
+                                 if all(bin[key] == flow[key] for key in ["s_ip", "s_port", "c_ip", "c_port"])])
 
             # Select any HTTP
             http = pandas.DataFrame(event["http"])
