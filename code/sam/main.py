@@ -91,14 +91,14 @@ def sample_bins(bins:    pandas.DataFrame,
 
 def args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input",    required=True)
+    parser.add_argument("--events",    required=True)
     parser.add_argument("--samples",  required=True)
     parser.add_argument("--provider", required=True, choices=["dazn", "amazon"])
     parser.add_argument("--window",   required=True)
     return parser.parse_args()
 
 def main():
-    input_path:    str = args().input
+    input_path:    str = args().events
     samples_path:  str = args().samples
     provider:      str = args().provider
     winsize:       str = args().window

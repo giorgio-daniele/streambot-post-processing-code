@@ -28,7 +28,7 @@ def write_data(file: str, dictionary: Counter):
             
 def args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input",    required=True)
+    parser.add_argument("--events",    required=True)
     parser.add_argument("--provider", required=True, choices=["dazn", "amazon"])
     return parser.parse_args()
 
@@ -37,7 +37,7 @@ def main():
     arguments = args()
 
     # Access the argument values
-    folder = arguments.input
+    folder = arguments.events
     server = arguments.provider
     
     # Init new counters
