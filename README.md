@@ -1,4 +1,4 @@
-# Streambot Post-Processing Code
+# streambot-post-processing-code
 This repository contains three main Python scripts that help with post-processing streambot output documents.
 
 ## Components
