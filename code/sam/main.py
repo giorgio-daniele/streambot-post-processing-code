@@ -130,6 +130,10 @@ def main():
             # Select all UDP flows associated with the content provider with regular expression
             event["udp"] = [item for item in event["udp"] if names.search(item.get("cname", ""))]
 
+            # Just for debug
+            # for flow in event["tcp"]:
+            #     print(flow["cname"])
+
             # Select all TCP flow bins matching the 4-tuple
             tcp_bins = []
             for flow in event["tcp"]:

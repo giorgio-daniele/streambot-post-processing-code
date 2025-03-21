@@ -26,7 +26,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Define the path to the files in the 'dazn' folder using os.path.join
 STREAMING_SERVERS = {
-    "dazn": r"(?=.*live)(?=.*dazn)"
+    "dazn":   r"(?=.*live)(?=.*dazn)",
+    "amazon": r"(linear|live).*(aiv|pv).*cdn.*|a.akamaihd.net"
 }
 
 class Protocol(enum.Enum):
